@@ -1,6 +1,7 @@
 import * as React from 'react'
 import ReactDOM from 'react-dom'
 import styled from 'styled-components'
+import Fuse from 'fuse.js'
 
 import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
@@ -10,11 +11,12 @@ import Search from '@material-ui/icons/Search'
 import TextField from '@material-ui/core/TextField'
 import { Link } from '@material-ui/core';
 
-
-
+const { useState } = React
+let initialHistories
 
 const App = props => {
-  console.log(props.histories)
+  const [histories, setHistories] =  useState(props.histories)
+
   return (
     <Container>
       <StyledTextField
@@ -29,17 +31,42 @@ const App = props => {
         }}
         fullWidth={true}
         autoFocus={true}
+        onChange={event => filterHistoriesByKeyword(event, setHistories)}
       />
       <StyledList component="nav">
-        {props.histories.map((history, key) => {
+        {histories.map((history, key) => {
           return (
           <ListItem button component='a' key={key} href={history.url}> 
-            {history.title} 
+            {history.title}<br />
+            {history.url}
           </ListItem>
         )})}
       </StyledList>
     </Container>
   )
+}
+
+const filterHistoriesByKeyword = (event, setHistories) => {
+  const options = {
+    shouldSort: true,
+    threshold: 0.6,
+    location: 0,
+    distance: 100,
+    maxPatternLength: 32,
+    minMatchCharLength: 1,
+    keys: [
+      "title",
+      "url"
+    ]
+  }
+
+  const fuse = new Fuse(initialHistories, options)
+  console.log(fuse.search(event.target.value))
+  if (event.target.value === '') {
+    setHistories(initialHistories)
+    return
+  }
+  setHistories(fuse.search(event.target.value))
 }
 
 const Container = styled.div`
@@ -124,9 +151,10 @@ const handleKeydown = event => {
 
     if (!isAppShown) {
       chrome.runtime.sendMessage({action: 'getHistories'}, response => {
-        injectApp(response.histories)
+        initialHistories = response.histories
+        injectApp(initialHistories)
+        isAppShown = true
       })
-      isAppShown = true
     }
   }
 
