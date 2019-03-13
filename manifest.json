@@ -7,8 +7,14 @@
 
   "permissions": [
     "activeTab",
-    "tabs"
+    "tabs",
+    "history",
+    "bookmarks"
   ],
+
+  "background": {
+    "scripts": ["src/build/background.js"]
+  },
 
   "content_scripts": [
     {
