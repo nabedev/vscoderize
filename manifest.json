@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+
+  "name": "vscorderize",
+  "description": "hack chrome",
+  "version": "1.0",
+
+  "permissions": [
+    "activeTab",
+    "tabs"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["src/build/main.js"]
+    }
+  ]
+}
