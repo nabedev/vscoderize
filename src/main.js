@@ -16,12 +16,22 @@ let defaultHistories
 const defaultCommands = [
   {
     command: 'Close Other Tab',
-    excute: ''
+    excute: () => {
+      chrome.runtime.sendMessage({action: 'closeOtherTab'}, () => {})
+    }
   },
   {
     command: 'CLose to the Right Tab',
-    excute: ''
-  }
+    excute: () => {
+      chrome.runtime.sendMessage({action: 'closeRightTab'}, () => {})
+    }
+  },
+  {
+    command: 'CLose to the Left Tab',
+    excute: () => {
+      chrome.runtime.sendMessage({action: 'closeLeftTab'}, () => {})
+    }
+  },
 ]
 
 class App extends React.Component {
@@ -85,9 +95,14 @@ class App extends React.Component {
     // Enter
     if (event.keyCode === 13) {
       if (!this.state.listItems.length) return
-      this.state.mode === 'search'
-      ? window.location.href = this.state.listItems[this.state.activeIndex].url
-      : false
+      if (this.state.mode === 'search') {
+        window.location.href = this.state.listItems[this.state.activeIndex].url
+        return
+      }
+      if (this.state.mode === 'command') {
+        this.state.listItems[this.state.activeIndex].excute()
+        removeApp()
+      }
     }
   }
 
