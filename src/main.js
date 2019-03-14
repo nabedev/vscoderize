@@ -7,83 +7,145 @@ import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemText from '@material-ui/core/ListItemText'
 import InputAdornment from '@material-ui/core/InputAdornment'
+import Input from '@material-ui/core/Input'
 import Search from '@material-ui/icons/Search'
 import TextField from '@material-ui/core/TextField'
 import { Link } from '@material-ui/core';
 
-const { useState } = React
-let initialHistories
+let defaultHistories
+const defaultCommands = [
+  {
+    command: 'Close Other Tab',
+    excute: ''
+  },
+  {
+    command: 'CLose to the Right Tab',
+    excute: ''
+  }
+]
 
-const App = props => {
-  const [histories, setHistories] =  useState(props.histories)
-
-  return (
-    <Container>
-      <StyledTextField
-        placeholder='Search in your history and bookmarks'
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <StyledSearch fontSize='large'/>
-            </InputAdornment>
-          ),
-          style: { fontSize: 28 }
-        }}
-        fullWidth={true}
-        autoFocus={true}
-        onChange={event => filterHistoriesByKeyword(event, setHistories)}
-      />
-      <StyledList component="nav">
-        {histories.map((history, key) => {
-          return (
-          <ListItem button component='a' key={key} href={history.url}> 
-            {history.title}<br />
-            {history.url}
-          </ListItem>
-        )})}
-      </StyledList>
-    </Container>
-  )
-}
-
-const filterHistoriesByKeyword = (event, setHistories) => {
-  const options = {
-    shouldSort: true,
-    threshold: 0.6,
-    location: 0,
-    distance: 100,
-    maxPatternLength: 32,
-    minMatchCharLength: 1,
-    keys: [
-      "title",
-      "url"
-    ]
+class App extends React.Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      listItems: props.listItems,
+      activeIndex: 0,
+      mode: props.mode
+    }
   }
 
-  const fuse = new Fuse(initialHistories, options)
-  console.log(fuse.search(event.target.value))
-  if (event.target.value === '') {
-    setHistories(initialHistories)
-    return
+  render () {
+    const { listItems, activeIndex, mode } = this.state
+    return (
+      <Container mode={mode}>
+        <StyledInput
+          placeholder="search... type '>' to change command mode"
+          inputProps={{
+            'aria-label': 'Description',
+          }}
+          fullWidth={true}
+          autoFocus={true}
+          style={{fontSize: 24, padding: 12}}
+          onChange={(event) => this.filterListItems(event)}
+          onKeyDown={(event) => this.onKeyDown(event)}
+        />
+        <ListContainer>
+          {listItems.map((item, key) => {
+            return this.state.mode === 'search'
+            ?
+              <ListItem button component='a' key={key} href={item.url} selected={activeIndex === key}>
+                {item.title}<br />
+                {item.url}
+              </ListItem>
+            :
+              <ListItem button key={key} selected={activeIndex === key}>
+                {item.command}
+              </ListItem>
+          })}
+        </ListContainer>
+      </Container>
+    )
   }
-  setHistories(fuse.search(event.target.value))
+
+  onKeyDown (event) {
+    // ⬆︎
+    if (event.keyCode === 38) {
+      this.state.activeIndex - 1 < 0
+      ? this.setState({ activeIndex: this.state.listItems.length - 1 })
+      : this.setState({ activeIndex: this.state.activeIndex - 1 })
+    }
+  
+    // ⬇︎
+    if (event.keyCode === 40) {
+      this.state.activeIndex + 1 >= this.state.listItems.length
+      ? this.setState({ activeIndex: 0 })
+      : this.setState({ activeIndex: this.state.activeIndex + 1 })
+    }
+  
+    // Enter
+    if (event.keyCode === 13) {
+      if (!this.state.listItems.length) return
+      this.state.mode === 'search'
+      ? window.location.href = this.state.listItems[this.state.activeIndex].url
+      : false
+    }
+  }
+
+  filterListItems (event) {
+    // change to command mode
+    if (event.target.value === '>') {
+      this.setState({ mode: 'command', listItems: defaultCommands.slice(0, 10), activeIndex: 0 })
+      return
+    }
+  
+    // change to search mode
+    if (this.state.mode === 'command' && event.target.value === '') {
+      this.setState({ mode: 'search', listItems: defaultHistories.slice(0, 10), activeIndex: 0 })
+      return
+    }
+  
+    const options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: this.state.mode === 'search' ? ['title', 'url'] : ['command']
+    }
+  
+    const searchItems = this.state.mode === 'search' ? defaultHistories : defaultCommands
+    const fuse = new Fuse(searchItems, options)
+
+    let searchKeyword
+    searchKeyword = this.state.mode === 'command' ? event.target.value.slice(1) : event.target.value
+
+    console.log(fuse.search(searchKeyword))
+    if (searchKeyword === '') {
+      this.setState({ listItems: defaultHistories.slice(0, 10), activeIndex: 0 })
+      return
+    }
+    this.setState({ listItems: fuse.search(searchKeyword).slice(0, 10), activeIndex: 0 })
+  }
 }
 
 const Container = styled.div`
   position: absolute;
   max-width: 580px;
   min-width: 200px;
+  border-radius: 6px;
   top: 20%;
   left: 0;
   right: 0;
   margin: auto;
   z-index: 2147483647;
-  /* * {
-    color: white !important;
-  } */
-  background: #fff !important;
+  * {
+    color: ${props => `${props.mode === 'search' ? 'white' : '#00FF41'} !important`};
+  }
+  background: #444f5a !important;
   max-height: 480px;
   overflow: scroll;
+  box-shadow: -9px 46px 165px -13px rgba(0,0,0,0.38);
 `
 
 const StyledTextField = styled(TextField)`
@@ -91,20 +153,37 @@ const StyledTextField = styled(TextField)`
   position: fixed !important;
   box-sizing: border-box;
   padding: 20px 0 10px 0 !important;
-  color: white !important;
-  background: #fff !important;
+  color: #eeeeee !important;
+  background: #444f5a !important;
   z-index: 2147483646;
+`
+
+const ListContainer = styled.div`
+  padding-top: 66px;
+  z-index: 2147483645;
 `
 
 const StyledList = styled(Link)`
   background: #fff !important;
   color: white !important;
-  margin-top: 46px;
+  padding: 80px 0 0 0 !important;
   z-index: 2147483645;
 `
 
-const StyledSearch = styled(Search)`
-  color: black !important;
+const StyledInput = styled(Input)`
+  position: fixed !important;
+  border-bottom: solid 1px rgba(255, 255, 255, 0.5);
+  background: #444f5a !important;
+  z-index: 2147483646;
+
+  &::after {
+    transition: none !important;
+    border-bottom: none !important;
+  }
+  &::before {
+    transition: none !important;
+    border-bottom: none !important;
+  }
 `
 // ReactDOM.render(<App />, document.getElementById('root'));
 
@@ -121,7 +200,7 @@ const injectApp = histories => {
   const div = document.createElement("div")
   div.setAttribute("id", "chromeExtensionReactApp")
   document.body.appendChild(div)
-  ReactDOM.render(<App histories={histories} />, div)
+  ReactDOM.render(<App listItems={histories} mode='search' />, div)
 }
 
 const removeApp = () => {
@@ -151,8 +230,8 @@ const handleKeydown = event => {
 
     if (!isAppShown) {
       chrome.runtime.sendMessage({action: 'getHistories'}, response => {
-        initialHistories = response.histories
-        injectApp(initialHistories)
+        defaultHistories = response.histories
+        injectApp(defaultHistories.slice(0, 10))
         isAppShown = true
       })
     }
