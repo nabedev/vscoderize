@@ -63,14 +63,14 @@ class App extends React.Component {
           {listItems.map((item, key) => {
             return this.state.mode === 'search'
             ?
-              <ListItem button component='a' key={key} href={item.url} selected={activeIndex === key}>
+              <StyledListItem button component='a' key={key} href={item.url} selected={activeIndex === key}>
                 {item.title}<br />
                 {item.url}
-              </ListItem>
+              </StyledListItem>
             :
-              <ListItem button key={key} selected={activeIndex === key}>
+              <StyledListItem button key={key} selected={activeIndex === key}>
                 {item.command}
-              </ListItem>
+              </StyledListItem>
           })}
         </ListContainer>
       </Container>
@@ -199,6 +199,10 @@ const StyledInput = styled(Input)`
     transition: none !important;
     border-bottom: none !important;
   }
+`
+
+const StyledListItem = styled(ListItem)`
+  transition: none !important;
 `
 // ReactDOM.render(<App />, document.getElementById('root'));
 
